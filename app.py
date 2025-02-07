@@ -35,7 +35,38 @@ def get_db_connection():
         return None
     
 """Task 2"""
-@app.route('/members', methods = ['POST'])
+# Route to get all members
+@app.route('/members', methods=['GET'])
+def get_all_members():
+    conn = get_db_connection()
+
+    if conn is None:
+        return jsonify({"message": "Failed to connect to the database"}), 500
+
+    cursor = conn.cursor()
+
+    query = "SELECT * FROM Members"
+    cursor.execute(query)
+    members = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    if members:
+        members_data = []
+        for member in members:
+            members_data.append({
+                "id": member[0],
+                "first_name": member[1],
+                "last_name": member[2],
+                "email": member[3]
+            })
+        return jsonify(members_data), 200
+    else:
+        return jsonify({"message": "No members found"}), 404
+
+# Route to add a new member
+@app.route('/members', methods=['POST'])
 def add_member():
     data = request.get_json()
 
@@ -47,10 +78,10 @@ def add_member():
 
     if conn is None:
         return jsonify({"message": "Failed to connect to the database"}), 500
-    
+
     cursor = conn.cursor()
 
-    query = "Insert into members (first_name, last_name, email) values (%s, %s, %s)"
+    query = "INSERT INTO Members (first_name, last_name, email) VALUES (%s, %s, %s)"
     cursor.execute(query, (first_name, last_name, email))
     conn.commit()
 
@@ -59,16 +90,17 @@ def add_member():
 
     return jsonify({"message": "Member added successfully"}), 201
 
+# Route to get a single member by ID
 @app.route('/members/<int:id>', methods=['GET'])
 def get_member(id):
     conn = get_db_connection()
 
     if conn is None:
         return jsonify({"message": "Failed to connect to the database"}), 500
-    
+
     cursor = conn.cursor()
 
-    query = "Select * from Members where id = %s"
+    query = "SELECT * FROM Members WHERE id = %s"
     cursor.execute(query, (id,))
     member = cursor.fetchone()
 
@@ -86,8 +118,9 @@ def get_member(id):
     else:
         abort(404, description="Member not found")
 
+# Route to update a member by ID
 @app.route('/members/<int:id>', methods=['PUT'])
-def update_member(id)
+def update_member(id):
     data = request.get_json()
 
     first_name = data.get('first_name')
@@ -98,10 +131,10 @@ def update_member(id)
 
     if conn is None:
         return jsonify({"message": "Failed to connect to the database"}), 500
-    
+
     cursor = conn.cursor()
 
-    query = "Update members set first_name = %s, last_name = %s, email = %s where id = %s"
+    query = "UPDATE Members SET first_name = %s, last_name = %s, email = %s WHERE id = %s"
     cursor.execute(query, (first_name, last_name, email, id))
     conn.commit()
 
@@ -110,16 +143,17 @@ def update_member(id)
 
     return jsonify({"message": "Member updated successfully"}), 200
 
-@app.route('/members/int:id>', methods=['Delete'])
+# Route to delete a member by ID
+@app.route('/members/<int:id>', methods=['DELETE'])
 def delete_member(id):
     conn = get_db_connection()
 
     if conn is None:
         return jsonify({"message": "Failed to connect to the database"}), 500
-    
+
     cursor = conn.cursor()
 
-    query = "Delete from Members where id = %s"
+    query = "DELETE FROM Members WHERE id = %s"
     cursor.execute(query, (id,))
     conn.commit()
 
@@ -128,25 +162,25 @@ def delete_member(id):
 
     return jsonify({"message": "Member deleted successfully"}), 200
 
-"""Task 3"""
-@app.route('/wourkouts', methods = ['POST'])
+# Route to add a new workout session
+@app.route('/workouts', methods=['POST'])
 def add_workout_session():
     data = request.get_json()
 
-    member_id = data.get('member_id'),
-    date = data.get('date'),
-    duration = data.get('duration'),
+    member_id = data.get('member_id')
+    date = data.get('date')
+    duration = data.get('duration')
     workout_type = data.get('type')
 
     conn = get_db_connection()
 
     if conn is None:
         return jsonify({"message": "Failed to connect to the database"}), 500
-    
+
     cursor = conn.cursor()
 
-    query = "Insert into WorkoutSessions (member_id, date, duration, type) Values (%s, %s, %s, %s)"
-    cursor.execute(query, (member_id, date,duration, workout_type))
+    query = "INSERT INTO WorkoutSessions (member_id, date, duration, type) VALUES (%s, %s, %s, %s)"
+    cursor.execute(query, (member_id, date, duration, workout_type))
     conn.commit()
 
     cursor.close()
@@ -154,16 +188,17 @@ def add_workout_session():
 
     return jsonify({"Message": "Workout session added successfully"}), 201
 
+# Route to get a workout session by ID
 @app.route('/workouts/<int:id>', methods=['GET'])
 def get_workout(id):
     conn = get_db_connection()
 
     if conn is None:
         return jsonify({"message": "Failed to connect to the database"}), 500
-    
+
     cursor = conn.cursor()
 
-    query = "Select * from WorkoutSessions where id = %s"
+    query = "SELECT * FROM WorkoutSessions WHERE id = %s"
     cursor.execute(query, (id,))
     workout_session = cursor.fetchone()
 
@@ -175,21 +210,23 @@ def get_workout(id):
             "id": workout_session[0],
             "member_id": workout_session[1],
             "date": workout_session[2],
-            "Duration": workout_session[3],
+            "duration": workout_session[3],
             "type": workout_session[4],
         }
         return jsonify(workout_data), 200
     else:
-        abort(404, description = "workout session not found")
+        abort(404, description="Workout session not found")
 
-@app.route('/members/<int:member_id>/workouts', methods = ['GET'])
+# Route to get all workout sessions for a specific member
+@app.route('/members/<int:member_id>/workouts', methods=['GET'])
 def get_member_workouts(member_id):
     conn = get_db_connection()
 
     if conn is None:
         return jsonify({"message": "Failed to connect to the database"}), 500
-    
+
     cursor = conn.cursor()
+
     query = "SELECT * FROM WorkoutSessions WHERE member_id = %s"
     cursor.execute(query, (member_id,))
     workouts = cursor.fetchall()
@@ -198,7 +235,6 @@ def get_member_workouts(member_id):
     conn.close()
 
     if workouts:
-        # Manually format each workout session
         workout_sessions_data = []
         for workout in workouts:
             workout_sessions_data.append({
@@ -212,56 +248,13 @@ def get_member_workouts(member_id):
     else:
         abort(404, description="No workout sessions found for this member")
 
-
-@app.route('/workouts/<int:id>', methods=['PUT'])
-def update_workout_session(id):
-    data = request.get_json()
-
-    date = data.get('date')
-    duration = data.get('duration')
-    workout_type = data.get('type')
-
-    conn = get_db_connection()
-
-    if conn is None:
-        return jsonify({"message": "Failed to connect to the database"}), 500
-
-    cursor = conn.cursor()
-
-    query = "UPDATE WorkoutSessions SET date = %s, duration = %s, type = %s WHERE id = %s"
-    cursor.execute(query, (date, duration, workout_type, id))
-    conn.commit()
-
-    cursor.close()
-    conn.close()
-
-    return jsonify({"message": "Workout session updated successfully"}), 200
-
-
-@app.route('/workouts/<int:id>', methods=['DELETE'])
-def delete_workout_session(id):
-    conn = get_db_connection()
-
-    if conn is None:
-        return jsonify({"message": "Failed to connect to the database"}), 500
-
-    cursor = conn.cursor()
-
-    query = "DELETE FROM WorkoutSessions WHERE id = %s"
-    cursor.execute(query, (id,))
-    conn.commit()
-
-    cursor.close()
-    conn.close()
-
-    return jsonify({"message": "Workout session deleted successfully"}), 200
-
-
-# Error handling
+# Error handling for 404
 @app.errorhandler(404)
 def resource_not_found(error):
     return jsonify({"message": str(error)}), 404
 
-
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+    
