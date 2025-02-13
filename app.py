@@ -11,9 +11,9 @@ ma = Marshmallow(app)
 def get_db_connection():
     """ Connect to the MySQL database and return the connection object"""
     # Database Connection Parameteres
-    db_name = 'fitness_center'
+    db_name = 'fitness_center_db'
     user = 'root'
-    password = "NeroZero1377@"
+    password = "NeroZero1377#"
     host = 'localhost'
 
     try:
